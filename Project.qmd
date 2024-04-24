@@ -1,0 +1,164 @@
+---
+title: "**Healthscape Chronicles: Traversing Trends in Global Well-being**"
+subtitle: ""
+author: "Kaushal Mahar"
+date: "2024-04-23"
+format:
+  html:
+    theme: cosmo
+    fontcolor: "purple"
+    toc: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+![](UNICEF_Logo.png)
+
+```{r}
+
+#| label: setup
+#| include: false
+
+#libraries
+
+library(tidyverse)
+library(plotly)
+
+#data
+
+unicef_metadata <- read.csv("unicef_metadata.csv") 
+unicef_indicator_2 <- read.csv("unicef_indicator_2.csv")
+
+
+#transformations
+
+
+data_join <- full_join(unicef_metadata, unicef_indicator_2, by = c("country", "alpha_2_code", "alpha_3_code"), relationship = "many-to-many")
+
+```
+
+![***Source: UNICEF***](UNI341033_0.jpg.jpeg)
+
+Welcome to the ***Health Insights Report***, where we embark on a journey to explore key indicators of healthcare access and outcomes across the globe. Through a series of **interactive visualizations**, we delve into the relationship between **Deliveries in Health Facilities**, **Life Expectancy**, **GDP**, and more, shedding light on the complexities of healthcare provision and its impact on **population health.**
+
+## **Population Dynamics**
+
+Our first stop is a ***line chart***, that traces the evolution of **population** over **time**, allowing us to observe trends & variations across different **countries**. By examining how populations have changed over years, we gain valuable insights into the **growth rates**, **demographic shifts**, & **challenges** faced by nations in managing **populations** effectively.
+
+```{r fig.cap= "***Fig 1: Population Dynamics*** | As depicted in the line chart, **India** and **China** has a continuous growth in the **populations**."}
+
+options(scipen = 999)
+timeseries_plot <- data_join %>%
+  ggplot(aes(x = year, y = Population, color = country)) +
+  geom_line() +
+  guides(color = "none") +
+  labs(
+    title = "Population Dynamics",
+    x = "Year",
+    y = "Population",
+    color = "Country"
+       ) +
+  theme_classic()
+
+ggplotly(timeseries_plot)
+ 
+```
+
+## Mapping Global Health Facility Deliveries
+
+Next, we take a ***global*** perspective with an interactive **map** showcasing **deliveries in health facilities** across **countries**. Through this visual exploration, we uncover geographical patterns and disparities in **healthcare** access, highlighting regions where access to essential services may be limited and where efforts for improvement are needed.
+
+```{r fig.cap= "***Fig 2: Global Health Facility Deliveries Map*** | The map depicts the number of **Deliveries in  a Health Facility** on the basis of various **countries** across the world. Countries in **grey** have no data due to a **mismatch** with their names"}
+
+map_world <- (map_data("world"))
+
+single <- unicef_indicator_2 %>%
+  select(Deliveries_in_a_Health_Facility, country, time_period) %>%
+  filter(time_period == 2015)
+
+map_data_join <- left_join(map_world, single, by = c("region" = "country"))
+
+map_vis <- map_data_join %>%
+  ggplot(aes(x = long, y = lat, group = group, fill = Deliveries_in_a_Health_Facility)) +
+  geom_polygon() +
+  scale_fill_gradient(low = "pink", high = "maroon", na.value = "grey") +
+  labs(
+    title = "Global Deliveries Map for year 2015",
+    subtitle = "Countries in grey have no data due to a mismatch with their names",
+    x = "Longitude",
+    y = "Latitude",
+    fill = "Deliveries_in_a_Health_Facility"
+  ) +
+  theme_classic()
+
+ggplotly(map_vis) 
+
+```
+
+## Global Snapshot: Deliveries in Health Facilities vs. GDP per Capita
+
+Now we explore the impact of **GDP** on **deliveries in health facilities** for different **countries**, examining how **economic factors** influence **healthcare** **access** and **utilization**. Through this analysis, we uncover socioeconomic disparities in **healthcare** **provision** and identify opportunities for investment and improvement in **healthcare** **infrastructure**.
+
+```{r fig.cap= "***Fig 3: Deliveries in Health Facilities vs. GDP per Capita*** | The ***scatter plot*** depicts the **Deliveries in a Health Facility** on the basis of **GDP per Capita** of different **countries** for the **year 2020**, where **Luxembourg** has the highest **deliveries in a health facilities**."}
+
+scatter_plot<- data_join %>%
+  filter(year == 2020) %>%
+  ggplot(
+    aes(x= Deliveries_in_a_Health_Facility, y= GDP_per_capita, color = country)) +
+  geom_point(alpha = 0.7, size=2) +
+  guides(color = "none") +
+  labs(
+    title = "Maternal Health vs GDP per Capita in 2020",
+    x = "Deliveries in a Health Facility",
+    y = "GDP per Capita",
+    color = "Country"
+  ) +
+  theme_classic()
+
+ggplotly(scatter_plot)
+
+```
+
+## Global Leaders in Maternal Health: Top 15 Countries by Health Facility Deliveries
+
+This ***bar chart*** illustrates the **top 15 countries** ranked by **deliveries in healthcare facilities**. It offers a snapshot of **maternal healthcare access** across different **nations**, aiding in comparative analysis and highlighting disparities. The Top 3 countries by **Health Facility Deliveries** are:
+
+1.  **China**
+2.  **Estonia**
+3.  **Brazil**
+
+```{r fig.cap= "***Fig 4: Top 15 Countries by Health Facility Deliveries*** | This ***Bar chart*** shows the **Top 15 countries** in terms of **Deliveries in a Health Facility**, and **China** tops the world, with **Estonia** and **Brazil** in the ***2nd*** and ***3rd*** place respectively. "}
+
+deliveries_2000<- data_join %>%
+  filter(year == 2020)
+deliveries_by_country <- deliveries_2000 %>%
+  group_by(country) %>%
+  summarise(total_deliveries = sum(Deliveries_in_a_Health_Facility)) %>%
+  arrange(desc(total_deliveries))
+top_countries <- head(deliveries_by_country, 15)
+
+bar_chart <- top_countries %>%
+ggplot(aes(x = reorder(country, -total_deliveries), y = total_deliveries, fill = country)) +
+  geom_bar(stat = "identity") +
+  guides(fill = "none") +
+  labs(
+    title = "Top 15 Countries by Total Deliveries in Health Facilities from 2000-2020",
+    x = "Country",
+    y = "Total Deliveries",
+    fill = "Country"
+  ) +
+  theme_classic()
+
+ggplotly(bar_chart)
+
+```
+
+## Conclusion
+
+As we conclude our journey through the ***Health Insights Report***, we reflect on the rich tapestry of **data and insights** uncovered. From trends in **healthcare** **access** to the impact of **economic factors** on **health outcomes**, our exploration has provided valuable insights into the complex interplay of factors shaping **population health** worldwide. Armed with these insights, we are better equipped to inform policy decisions, allocate resources, and drive positive change in **healthcare delivery** for the benefit of all.
+
+![***Source: UNICEF***](UN0746969.jpg.jpeg)
+
+![](Screenshot%202024-04-24%20140057.png)
